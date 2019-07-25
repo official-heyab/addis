@@ -50,7 +50,11 @@ const flags no_output = 1;
 const flags pack_edges = 2;
 const flags sparse_no_filter = 4;
 const flags dense_forward = 8;
-const flags dense_parallel = 16;
+
+//HEYAB v0.1 UPDATE (4/4)
+//Storing -1 to dense_parallel
+
+const flags dense_parallel = -1;
 const flags remove_duplicates = 32;
 const flags no_dense = 64;
 inline bool should_output(const flags& fl) { return !(fl & no_output); }
