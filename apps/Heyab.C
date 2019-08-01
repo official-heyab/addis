@@ -1,9 +1,13 @@
 #include "ligra.h"
 #include "math.h"
-//HEYAB v0.1 UPDATE (2/4)
-//Including and adding queue
-#include <queue> 
-queue<double> myqueue; 
+#include <queue>
+
+//HEYAB v0.2 UPDATE (1/3)
+//Creating queue for each vertex
+const int queueSize = 300000;
+queue<double> myqueue[queueSize]; 
+
+
 
 template <class vertex>
 struct PR_F {
@@ -16,13 +20,11 @@ struct PR_F {
     return 1;
   }
   inline bool updateAtomic (uintE s, uintE d) { //atomic Update
-    // writeAdd(&p_next[d],p_curr[s]/V[s].getOutDegree());
+    //writeAdd(&p_next[d],p_curr[s]/V[s].getOutDegree());
 
-    //HEYAB v0.1 UPDATE (3/4)
-    //This loop stores updates to queue
-    myqueue.push(-1);
-    myqueue.push(d);
-    myqueue.push(p_curr[s]/V[s].getOutDegree());
+    //HEYAB v0.2 UPDATE (2/3)
+    //Pushing the source page rank to the destination queue
+    myqueue[d].push(p_curr[s]/V[s].getOutDegree());
     return 1;
   }
   inline bool cond (intT d) { return cond_true(d); }};
@@ -85,17 +87,12 @@ void Compute(graph<vertex>& GA, commandLine P) {
   }
   Frontier.del(); free(p_curr); free(p_next);
 
-  //HEYAB v0.1 UPDATE (4/4)
-  //This loop adds from queue
-  while (!myqueue.empty()) { 
-    if(myqueue.front()==-1){
-        myqueue.pop();
-        int destination = myqueue.front();
-        myqueue.pop();
-        float page_rank = myqueue.front();
-        p_next[destination] += page_rank;
-        myqueue.pop();
-    }    
+  //HEYAB v0.2 UPDATE (3/3)
+  //This loop adds page rank for the destination from queue parallely
+  parallel_for(long i=0;i<queueSize;i++) {
+    while (!myqueue[i].empty()) { 
+        p_next[i] += myqueue[i].front();
+        myqueue[i].pop();          
+      }
   }
-
 }
