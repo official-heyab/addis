@@ -24,6 +24,18 @@
 #include "ligra.h"
 #include "math.h"
 
+
+//Function which writes page rank to file
+void pageRankToFile(double p_next[], int n){
+  //Writing page rank value to benchmark.txt
+  ofstream myfile;
+  myfile.open ("../inputs/benchmark.txt");
+  parallel_for(long i=0;i<n;i++) {
+    myfile<<p_next[i]<<"\n";
+  }
+  myfile.close();
+}
+
 template <class vertex>
 struct PR_F {
   double* p_curr, *p_next;
@@ -86,6 +98,10 @@ void Compute(graph<vertex>& GA, commandLine P) {
   while(iter++ < maxIters) {
     edgeMap(GA,Frontier,PR_F<vertex>(p_curr,p_next,GA.V),0, no_output);
     vertexMap(Frontier,PR_Vertex_F(p_curr,p_next,damping,n));
+
+    //Writing the page rank to file for debugging purposes
+    pageRankToFile(p_next, n);
+
     //compute L1-norm between p_curr and p_next
     {parallel_for(long i=0;i<n;i++) {
       p_curr[i] = fabs(p_curr[i]-p_next[i]);
@@ -97,4 +113,8 @@ void Compute(graph<vertex>& GA, commandLine P) {
     swap(p_curr,p_next);
   }
   Frontier.del(); free(p_curr); free(p_next); 
+
+  
 }
+
+

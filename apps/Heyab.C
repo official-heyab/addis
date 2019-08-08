@@ -1,13 +1,27 @@
 #include "ligra.h"
 #include "math.h"
 #include <queue>
+#include <mutex>
 
-//HEYAB v0.2 UPDATE (1/3)
-//Creating queue for each vertex
-const int queueSize = 300000;
-queue<double> myqueue[queueSize]; 
+//Global variables
+const int vertexNum =100000;
+const int queueNum =100;
+int vertexPerQueue=vertexNum/queueNum;
+
+queue<double> myQueue[queueNum];
+mutex mtx[queueNum];
 
 
+//Function which writes page rank to file
+void pageRankToFile(double p_next[], int n){
+  //Writing page rank value to heyab.txt
+  ofstream myfile;
+  myfile.open ("../inputs/heyab.txt");
+  parallel_for(long i=0;i<n;i++) {
+    myfile<<p_next[i]<<"\n";
+  }
+  myfile.close();
+}
 
 template <class vertex>
 struct PR_F {
@@ -21,10 +35,19 @@ struct PR_F {
   }
   inline bool updateAtomic (uintE s, uintE d) { //atomic Update
     //writeAdd(&p_next[d],p_curr[s]/V[s].getOutDegree());
+    
+    //Getting queue index based on the destination id
+    int queueIndex = d/vertexPerQueue;
 
-    //HEYAB v0.2 UPDATE (2/3)
-    //Pushing the source page rank to the destination queue
-    myqueue[d].push(p_curr[s]/V[s].getOutDegree());
+    //Locking the specific mutex for that queue
+    mtx[queueIndex].lock();
+
+    //Adding the page rank + destination id to the queue
+    myQueue[queueIndex].push(p_curr[s]/V[s].getOutDegree()+d);
+
+    //Unlocking the specific mutex
+    mtx[queueIndex].unlock();
+   
     return 1;
   }
   inline bool cond (intT d) { return cond_true(d); }};
@@ -75,6 +98,24 @@ void Compute(graph<vertex>& GA, commandLine P) {
   while(iter++ < maxIters) {
     edgeMap(GA,Frontier,PR_F<vertex>(p_curr,p_next,GA.V),0, no_output);
     vertexMap(Frontier,PR_Vertex_F(p_curr,p_next,damping,n));
+
+    //Using parallel loop adding the page rank of the respective 
+    //Destination index found inside the queue
+    parallel_for(long i=0;i<queueNum;i++) {
+      while (!myQueue[i].empty()){ 
+        //By getting the floor value, we know the destination index     
+        int d=floor(myQueue[i].front()); 
+
+        //Subtracting the destination index from the queue value will
+        //give us page rank
+        p_next[d] += myQueue[i].front()-d;
+        myQueue[i].pop();       
+      }      
+    }
+
+    //Writing the page rank to file for debugging purposes
+    pageRankToFile(p_next, n);  
+
     //compute L1-norm between p_curr and p_next
     {parallel_for(long i=0;i<n;i++) {
       p_curr[i] = fabs(p_curr[i]-p_next[i]);
@@ -85,14 +126,6 @@ void Compute(graph<vertex>& GA, commandLine P) {
     vertexMap(Frontier,PR_Vertex_Reset(p_curr));
     swap(p_curr,p_next);
   }
-  Frontier.del(); free(p_curr); free(p_next);
-
-  //HEYAB v0.2 UPDATE (3/3)
-  //This loop adds page rank for the destination from queue parallely
-  parallel_for(long i=0;i<queueSize;i++) {
-    while (!myqueue[i].empty()) { 
-        p_next[i] += myqueue[i].front();
-        myqueue[i].pop();          
-      }
-  }
+  Frontier.del(); free(p_curr); free(p_next);     
 }
+

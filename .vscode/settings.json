@@ -1,6 +1,12 @@
 {
     "files.associations": {
         "Heyab.C": "cpp",
-        "PageRank.C": "cpp"
+        "PageRank.C": "cpp",
+        "iosfwd": "cpp",
+        "Suzi.C": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp"
     }
 }

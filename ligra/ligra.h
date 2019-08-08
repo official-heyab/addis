@@ -470,6 +470,35 @@ inline bool cond_true (intT d) { return 1; }
 template<class vertex>
 void Compute(graph<vertex>&, commandLine);
 
+//This function compares both files given
+//And writes the page ranks which are different to difference.txt  
+void compareFiles() { 
+    char line1[20], line2[20];
+    int vertex = 0;
+    ofstream myfile;
+    FILE *fp1 = fopen("../inputs/benchmark.txt", "r"); 
+    FILE *fp2 = fopen("../inputs/heyab.txt", "r"); 
+  
+    if(fp1 == NULL || fp2 == NULL){ 
+       printf("Error : Files not open"); 
+    } else{ 
+      myfile.open("../inputs/difference.txt");
+      while(!feof(fp1)){
+        char *x=fgets(line1, sizeof(line1), fp1);
+        char *y=fgets(line2, sizeof(line2), fp2);
+        if(strcmp(line1,line2)!=0){
+          myfile<<vertex<<"\n";
+          myfile<<"Bench= "<<line1;
+          myfile<<"Heyab= "<<line2;
+        }
+        vertex++;
+      }
+      myfile.close();
+      fclose(fp1); 
+      fclose(fp2); 
+    }
+}
+
 int parallel_main(int argc, char* argv[]) {
   commandLine P(argc,argv," [-s] <inFile>");
   char* iFile = P.getArgument(0);
@@ -523,10 +552,16 @@ int parallel_main(int argc, char* argv[]) {
         startTime();
         Compute(G,P);
         nextTime("Running time");
+
+        //Comparing the page rank written by benchmark and ./Heyab
+        compareFiles(); 
+       
         if(G.transposed) G.transpose();
       }
       G.del();
     }
   }
 }
+
+ 
 #endif
